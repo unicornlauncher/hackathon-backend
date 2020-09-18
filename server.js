@@ -66,6 +66,27 @@ roomRouter.route('/:id').get((req, res) => {
   });
 });
 
+roomRouter.route('/:id/config').post((req, res) => {
+  const { sequence } = req.body;
+  memory.get(req.params.id, (err, roomStr) => {
+    if (err) {
+      return res.status(500).json({ msg: 'Ooops' });
+    }
+
+    const room = JSON.parse(roomStr);
+    console.log(room._id, { ...room, sequence });
+    const updated = { ...room, sequence };
+    memory.set(room._id, JSON.stringify(updated), err => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ msg: 'Ooops' });
+      }
+
+      return res.json(updated);
+    });
+  });
+});
+
 app.use(`${BASE_URL}/v1/rooms`, roomRouter);
 
 http.createServer(app).listen(PORT, () => {
