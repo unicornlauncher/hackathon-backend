@@ -24,7 +24,6 @@ roomRouter.route('/').post((req, res) => {
   const { roomName, userName } = req.body;
   const owner = { _id: uuid(), userName };
   const room = { _id: uuid(), roomName, owner, participants: [owner] };
-  console.log(room, JSON.stringify(room));
   memory.set(room._id, JSON.stringify(room), err => {
     if (err) {
       return res.status(500).json({ msg: 'Ooops' });

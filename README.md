@@ -2,12 +2,10 @@
 
 REST API for our first Hackaton
 
-_rooms_
+## rooms
 
-```POST /
+`POST/`
 body: { roomName: String, userName: String }
-```
 
-```GET /:id
+`GET /:id`
 Returns the room info
-```
