@@ -9,8 +9,9 @@ const { uuid } = require('uuidv4');
 const redis = require('redis');
 const bodyParser = require('body-parser');
 const memory = redis.createClient();
-
+const IOServer = require('socket.io');
 const app = express();
+const io = new IOServer();
 
 app.use(cors());
 app.use(bodyParser.json({}));
@@ -39,6 +40,8 @@ class RoomCodeGenerator {
   }
 }
 
+const INTERNAL_ERROR = res => res.status(500).json({ msg: 'Oops' });
+
 roomRouter.route('/').post((req, res) => {
   const { roomName, userName } = req.body;
   const owner = { _id: uuid(), userName };
@@ -60,7 +63,7 @@ roomRouter.route('/').post((req, res) => {
 roomRouter.route('/:id').get((req, res) => {
   memory.get(req.params.id, (err, room) => {
     if (err) {
-      return res.status(500).json({ msg: 'Oops' });
+      return INTERNAL_ERROR(res);
     }
     return res.json(JSON.parse(room));
   });
@@ -83,6 +86,30 @@ roomRouter.route('/:id/config').post((req, res) => {
       }
 
       return res.json(updated);
+    });
+  });
+});
+
+roomRouter.route('/:id/cards').post((req, res) => {
+  const { cards } = req.body;
+  memory.get(req.params.id, (err, roomStr) => {
+    const room = JSON.parse(roomStr);
+    if (err) {
+      console.log(err);
+      return INTERNAL_ERROR(res);
+    }
+
+    const updated = {
+      ...room,
+      cards: [...(room.cards || []), cards.map(c => ({ ...c, _id: uuid() }))],
+    };
+    memory.set(room._id, JSON.stringify(updated), err => {
+      if (err) {
+        console.log(err);
+        return INTERNAL_ERROR(res);
+      }
+
+      return res.status(201).json(updated);
     });
   });
 });
