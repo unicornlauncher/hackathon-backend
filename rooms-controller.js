@@ -33,7 +33,7 @@ class RoomsController {
       };
 
       await memory.set(room._id, room);
-      return res.status(201).json(room);
+      return res.status(201).json({ room, owner });
     } catch (ex) {
       console.log(ex);
       return internalServerError(res);
