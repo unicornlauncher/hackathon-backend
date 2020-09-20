@@ -39,3 +39,6 @@ envelope: `{ data: { roomId, cardId } }`
 message: `CARD_VOTED`
 envelope: `{ data: { roomId, cardId, userId, vote } }`
 
+### Vote session finished
+message: `VOTE_SESSION_FINISHED`
+envelope: `{ roomId, result: cards }`

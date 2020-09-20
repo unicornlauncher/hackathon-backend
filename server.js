@@ -211,7 +211,23 @@ roomRouter.route('/:roomId/cards/:cardId/stage').post(async (req, res) => {
 
   io.emit('CARD_STAGED_TO_VOTE', { data: { roomId, cardId } });
 
-  return res.status(204);
+  return res.status(204).end();
+});
+
+roomRouter.route('/:roomId/cards/:cardId/unstage').post(async (req, res) => {
+  const { cardId, roomId } = req.params;
+  const room = await memory.get(roomId);
+  const updated = {
+    ...room,
+    cards: room.cards.map(card =>
+      card._id === cardId ? { ...card, staged: false } : card
+    ),
+  };
+
+  await memory.set(room._id, updated);
+  io.emit('VOTE_SESSION_FINISHED', { roomId, result: updated.cards });
+
+  return res.status(204).end();
 });
 
 roomRouter.route('/:roomId/cards/:cardId/vote').post(async (req, res) => {
@@ -221,7 +237,7 @@ roomRouter.route('/:roomId/cards/:cardId/vote').post(async (req, res) => {
   const updated = {
     ...room,
     cards: room.cards.map(card =>
-      card._id === cardId ? { ...card, votes: [{ vote, userId }] } : card
+      card._id === cardId ? { ...card, votes: [...card.votes, { vote, userId }] } : card
     ),
   };
 
