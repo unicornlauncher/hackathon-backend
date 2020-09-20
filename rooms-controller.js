@@ -231,6 +231,7 @@ class RoomsController {
 
   async vote(req, res) {
     try {
+      const { memory, io } = this.props;
       const { cardId, roomId } = req.params;
       const { vote, userId } = req.body;
       const room = await memory.get(roomId);
