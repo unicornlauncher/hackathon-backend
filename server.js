@@ -23,8 +23,6 @@ const server = http.createServer(app);
 const io = new IOServer(server);
 const roomsController = new RoomsController({ memory, io, uuid });
 
-app.use(`${BASE_URL}/v1/ping`, (_, res) => res.send('pong'));
-
 roomRouter.route('/').post(roomsController.create);
 roomRouter.route('/:id').get(roomsController.get);
 roomRouter.route('/:id/config').post(roomsController.setConfig);
@@ -47,8 +45,8 @@ roomRouter
 
 roomRouter.route('/:id/quit').post(roomsController.quit);
 
+app.use(`${BASE_URL}/v1/ping`, (_, res) => res.send('pong'));
 app.use(`${BASE_URL}/v1/rooms`, roomRouter);
-
 app.use('*', (_, res) => res.status(404).json({ msg: 'Resource not found' }));
 
 server.listen(PORT, () => console.log(`> 🚀 Server running at ${PORT}`));

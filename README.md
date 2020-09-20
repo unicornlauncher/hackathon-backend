@@ -35,7 +35,7 @@ REST API for our first Hackaton
 }
 ```
 
-## rooms (/rooms)
+## /rooms
 
 `POST /`  
 description: Create a room  
