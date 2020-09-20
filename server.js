@@ -8,7 +8,6 @@ const cors = require('cors');
 const { uuid } = require('uuidv4');
 const redis = require('redis');
 const bodyParser = require('body-parser');
-// const memory = redis.createClient();
 const IOServer = require('socket.io');
 const app = express();
 const io = new IOServer();
@@ -125,6 +124,9 @@ roomRouter.route('/:id/config').post(async (req, res) => {
     console.log(room._id, { ...room, sequence });
     const updated = { ...room, sequence };
     await memory.set(room._id, updated);
+    io.emit('ROOM_CONFIG_UPDATED', {
+      data: { roomId: room._id, config: { sequence } },
+    });
     return res.json(updated);
   } catch (ex) {
     console.log(ex);
@@ -135,13 +137,18 @@ roomRouter.route('/:id/config').post(async (req, res) => {
 roomRouter.route('/:id/cards').post(async (req, res) => {
   try {
     const { cards } = req.body;
+    const updatedCards = cards.map(c => ({ ...c, _id: uuid() }));
     const room = await memory.get(req.params.id);
     const updated = {
       ...room,
-      cards: [...(room.cards || []), cards.map(c => ({ ...c, _id: uuid() }))],
+      cards: [...(room.cards || []), ...updatedCards],
     };
 
     await memory.set(room._id, updated);
+    io.emit('NEW_CARDS_ADDED', {
+      data: { roomId: room._id, cards: updatedCards },
+    });
+
     return res.status(201).json(updated);
   } catch (err) {
     console.log(err);
@@ -172,10 +179,13 @@ roomRouter.route('/join/:roomCode').post(async (req, res) => {
       return res.status(400).json({ msg: 'Room not found' });
     }
 
+    const participant = { name, _id: uuid() };
     await memory.set({
       ...room,
-      participants: [...room.participants, { name, _id: uuid() }],
+      participants: [...room.participants, participant],
     });
+
+    io.emit('NEW_ROOM_PARTICIPANT', { data: { roomId: room._id, participant } });
 
     return res.json(room);
   } catch (ex) {
