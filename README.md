@@ -3,6 +3,7 @@
 REST API for our first Hackaton
 
 ## rooms (/rooms)
+
 `POST /`
 Create a room
 body: `{ roomName: String, userName: String }`
@@ -37,6 +38,10 @@ Body: `{ vote, userId }`
 `PUT /:roomId/cards/:cardId/vote`
 Update a vote in a card
 Body: `{ vote, userId }`
+
+`POST /:id/quit`
+Allow users to exit the room. If the user leaving is the room owner, the room will be destroyed.
+Body: `{ userId }`
 
 ## Websocket
 
@@ -73,5 +78,11 @@ message: `VOTE_SESSION_FINISHED`
 envelope: `{ roomId, result: cards }`
 
 ### Vote updated
+
 message: `VOTE_UPDATED`
 envelope: `{ roomId, cardId, userId, newVote }`
+
+### Vote updated
+
+message: `ROOM_DELETED`
+envelope: `{ data: { roomId: room._id } }`

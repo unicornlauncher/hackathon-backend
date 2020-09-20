@@ -39,6 +39,18 @@ class MemoryDatabase {
       });
     });
   }
+
+  async del(key) {
+    return new Promise((resolve, reject) => {
+      this.memory.del(key, err => {
+        if (err) {
+          reject(err);
+        }
+
+        resolve();
+      });
+    });
+  }
 }
 
 module.exports = { MemoryDatabase };

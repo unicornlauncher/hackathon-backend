@@ -44,6 +44,8 @@ roomRouter
   .put(roomsController.updateVote)
   .post(roomsController.vote);
 
+roomRouter.route('/:id/quit').post(roomsController.quit);
+
 app.use(`${BASE_URL}/v1/rooms`, roomRouter);
 
 app.use('*', (_, res) => res.status(404).json({ msg: 'Resource not found' }));

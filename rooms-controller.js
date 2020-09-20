@@ -15,6 +15,7 @@ class RoomsController {
     this.unstageCardFromVoting = this.unstageCardFromVoting.bind(this);
     this.updateVote = this.updateVote.bind(this);
     this.vote = this.vote.bind(this);
+    this.quit = this.quit.bind(this);
   }
 
   async create(req, res) {
@@ -225,6 +226,26 @@ class RoomsController {
       await memory.set(room._id, updated);
       io.sockets.emit('CARD_VOTED', { data: { roomId, cardId, userId, vote } });
 
+      return res.status(204).end();
+    } catch (ex) {
+      console.log(ex);
+      return internalServerError(res);
+    }
+  }
+
+  async quit(req, res) {
+    try {
+      const { id } = req.params;
+      const { userId } = req.body;
+      const { memory } = this.props;
+
+      const room = await memory.get(id);
+      console.log(room);
+      if (room.owner._id === userId) {
+        memory.del(room._id);
+      }
+
+      io.sockets.emit('ROOM_DELETED', { data: { roomId: room._id } });
       return res.status(204).end();
     } catch (ex) {
       console.log(ex);
