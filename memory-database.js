@@ -16,7 +16,6 @@ class MemoryDatabase {
   }
 
   async set(key, value) {
-    console.log(value);
     return new Promise((resolve, reject) => {
       this.memory.set(key, JSON.stringify(value), err => {
         if (err) {

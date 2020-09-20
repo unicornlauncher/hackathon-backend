@@ -55,7 +55,6 @@ class RoomsController {
     try {
       const { sequence } = req.body;
       const room = await memory.get(req.params.id);
-      console.log(room._id, { ...room, sequence });
       const updated = { ...room, sequence };
       await memory.set(room._id, updated);
       io.sockets.emit('ROOM_CONFIG_UPDATED', {
@@ -240,7 +239,6 @@ class RoomsController {
       const { memory } = this.props;
 
       const room = await memory.get(id);
-      console.log(room);
       if (room.owner._id === userId) {
         memory.del(room._id);
       }
