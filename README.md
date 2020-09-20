@@ -40,7 +40,7 @@ REST API for our first Hackaton
 `POST /`  
 description: Create a room  
 body: `{ roomName: String, userName: String }`  
-response: { room: Room, owner: User }
+response: `{ room: Room, owner: User }`
 
 `GET /:id`  
 description: Get room info  
