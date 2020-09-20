@@ -2,14 +2,48 @@
 
 REST API for our first Hackaton
 
+## Models
+
+**User**
+
+```
+{
+  _id: String,
+  name: String
+}
+```
+
+**Card**
+
+```
+{
+  _id: String,
+  title: String,
+  description: String,
+  meta: Object<Any>
+}
+```
+
+**Room**
+
+```
+{
+  _id: String,
+  code: String,
+  owner: User,
+  cards: Array<Card>
+}
+```
+
 ## rooms (/rooms)
 
 `POST /`
 Create a room
 body: `{ roomName: String, userName: String }`
+response: { room, owner }
 
 `GET /:id`
-Returns the room info
+response: { room: Room }
 
 `POST /:id/config`
 Sets room config, only config for the moment is { sequence: Array<String> }
@@ -94,3 +128,7 @@ envelope: `{ data: { roomId: room._id } }`
 
 message: `CARD_DELETED`
 envelope: `{ data: { roomId, cardId } }`
+
+```
+
+```
