@@ -37,5 +37,5 @@ envelope: `{ data: { roomId, cardId } }`
 
 ### Card voted
 message: `CARD_VOTED`
-envelope: `{ data: { roomId, cardId, vote } }`
+envelope: `{ data: { roomId, cardId, userId, vote } }`
 

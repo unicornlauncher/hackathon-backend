@@ -226,8 +226,8 @@ roomRouter.route('/:roomId/cards/:cardId/vote').post(async (req, res) => {
   };
 
   await memory.set(room._id, updated);
-  io.emit('CARD_VOTED', { data: { roomId, cardId, vote } });
-  
+  io.emit('CARD_VOTED', { data: { roomId, cardId, userId, vote } });
+
   return res.status(204).end();
 });
 
