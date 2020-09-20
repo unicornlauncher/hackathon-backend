@@ -30,3 +30,12 @@ envelope: `{ data: { roomId: room._id, participant } }`
 ### New room cards
 message: `NEW_CARDS_ADDED`
 envelope: `{ data: { roomId: room._id, cards: updatedCards } }`
+
+### Card staged to vote
+message: `CARD_STAGED_TO_VOTE`
+envelope: `{ data: { roomId, cardId } }`
+
+### Card voted
+message: `CARD_VOTED`
+envelope: `{ data: { roomId, cardId, vote } }`
+

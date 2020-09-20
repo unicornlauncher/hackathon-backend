@@ -185,13 +185,50 @@ roomRouter.route('/join/:roomCode').post(async (req, res) => {
       participants: [...room.participants, participant],
     });
 
-    io.emit('NEW_ROOM_PARTICIPANT', { data: { roomId: room._id, participant } });
+    io.emit('NEW_ROOM_PARTICIPANT', {
+      data: { roomId: room._id, participant },
+    });
 
     return res.json(room);
   } catch (ex) {
     console.log(ex);
     return internalServerError(res);
   }
+});
+
+roomRouter.route('/:roomId/cards/:cardId/stage').post(async (req, res) => {
+  const { cardId, roomId } = req.params;
+
+  const room = await memory.get(roomId);
+  const updated = {
+    ...room,
+    cards: room.cards.map(card =>
+      card._id === cardId ? { ...card, staged: true, votes: [] } : card
+    ),
+  };
+
+  await memory.set(room._id, updated);
+
+  io.emit('CARD_STAGED_TO_VOTE', { data: { roomId, cardId } });
+
+  return res.status(204);
+});
+
+roomRouter.route('/:roomId/cards/:cardId/vote').post(async (req, res) => {
+  const { cardId, roomId } = req.params;
+  const { vote, userId } = req.body;
+  const room = await memory.get(roomId);
+  const updated = {
+    ...room,
+    cards: room.cards.map(card =>
+      card._id === cardId ? { ...card, votes: [{ vote, userId }] } : card
+    ),
+  };
+
+  await memory.set(room._id, updated);
+  io.emit('CARD_VOTED', { data: { roomId, cardId, vote } });
+  
+  return res.status(204).end();
 });
 
 app.use(`${BASE_URL}/v1/rooms`, roomRouter);
