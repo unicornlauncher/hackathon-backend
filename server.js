@@ -10,18 +10,15 @@ const redis = require('redis');
 const bodyParser = require('body-parser');
 const IOServer = require('socket.io');
 const app = express();
-const io = new IOServer();
 
-app.io = io;
-
-app.use(cors());
+app.use(cors('*'));
 app.use(bodyParser.json({}));
 app.use(morgan('dev'));
 
 app.use(`${BASE_URL}/v1/ping`, (req, res) => res.send('pong'));
 
 const roomRouter = express.Router();
-
+let io = {};
 class MemoryDatabase {
   constructor({ redisClient }) {
     this.memory = redisClient;
@@ -124,7 +121,7 @@ roomRouter.route('/:id/config').post(async (req, res) => {
     console.log(room._id, { ...room, sequence });
     const updated = { ...room, sequence };
     await memory.set(room._id, updated);
-    io.emit('ROOM_CONFIG_UPDATED', {
+    io.sockets.emit('ROOM_CONFIG_UPDATED', {
       data: { roomId: room._id, config: { sequence } },
     });
     return res.json(updated);
@@ -145,7 +142,7 @@ roomRouter.route('/:id/cards').post(async (req, res) => {
     };
 
     await memory.set(room._id, updated);
-    io.emit('NEW_CARDS_ADDED', {
+    io.sockets.emit('NEW_CARDS_ADDED', {
       data: { roomId: room._id, cards: updatedCards },
     });
 
@@ -185,7 +182,7 @@ roomRouter.route('/join/:roomCode').post(async (req, res) => {
       participants: [...room.participants, participant],
     });
 
-    io.emit('NEW_ROOM_PARTICIPANT', {
+    io.sockets.emit('NEW_ROOM_PARTICIPANT', {
       data: { roomId: room._id, participant },
     });
 
@@ -209,7 +206,7 @@ roomRouter.route('/:roomId/cards/:cardId/stage').post(async (req, res) => {
 
   await memory.set(room._id, updated);
 
-  io.emit('CARD_STAGED_TO_VOTE', { data: { roomId, cardId } });
+  io.sockets.emit('CARD_STAGED_TO_VOTE', { data: { roomId, cardId } });
 
   return res.status(204).end();
 });
@@ -225,7 +222,9 @@ roomRouter.route('/:roomId/cards/:cardId/unstage').post(async (req, res) => {
   };
 
   await memory.set(room._id, updated);
-  io.emit('VOTE_SESSION_FINISHED', { roomId, result: updated.cards });
+  io.sockets.emit('VOTE_SESSION_FINISHED', {
+    data: { roomId, result: updated.cards },
+  });
 
   return res.status(204).end();
 });
@@ -252,7 +251,9 @@ roomRouter
     };
 
     await memory.set(room._id, updated);
-    io.emit('VOTE_UPDATED', { roomId, cardId, userId, newVote });
+    io.sockets.emit('VOTE_UPDATED', {
+      data: { roomId, cardId, userId, newVote },
+    });
 
     return res.status(204).end();
   })
@@ -270,13 +271,16 @@ roomRouter
     };
 
     await memory.set(room._id, updated);
-    io.emit('CARD_VOTED', { data: { roomId, cardId, userId, vote } });
+    io.sockets.emit('CARD_VOTED', { data: { roomId, cardId, userId, vote } });
 
     return res.status(204).end();
   });
 
 app.use(`${BASE_URL}/v1/rooms`, roomRouter);
 
-http.createServer(app).listen(PORT, () => {
+const server = http.createServer(app);
+io = new IOServer(server);
+
+server.listen(PORT, () => {
   console.log(`> 🚀 Server running at ${PORT}`);
 });

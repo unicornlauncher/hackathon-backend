@@ -3,7 +3,6 @@
 REST API for our first Hackaton
 
 ## rooms
-
 `POST/`
 body: { roomName: String, userName: String }
 
@@ -51,6 +50,5 @@ message: `VOTE_SESSION_FINISHED`
 envelope: `{ roomId, result: cards }`
 
 ### Vote updated
-
 message: `VOTE_UPDATED`
 envelope: `{ roomId, cardId, userId, newVote }`
