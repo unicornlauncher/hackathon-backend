@@ -37,55 +37,55 @@ REST API for our first Hackaton
 
 ## rooms (/rooms)
 
-`POST /`
-Create a room  
+`POST /`  
+description: Create a room  
 body: `{ roomName: String, userName: String }`  
 response: { room: Room, owner: User }
 
-`GET /:id`
-Get room info  
-response: { room: Room }
+`GET /:id`  
+description: Get room info  
+response: `{ room: Room }`
 
-`POST /:id/config`
-Sets room config, only config for the moment is { sequence: Array<String> }  
+`POST /:id/config`  
+description: Sets room config, only config for the moment is { sequence: Array<String> }  
 body: `{ sequence: Array<String> }`
 
-`POST /:id/cards`
+`POST /:id/cards`  
 Add a list of cards to vote.  
 body: `{ cards: Array<Card> }`
 
-`DELETE /:roomId/cards/:cardId`
-Delete a card  
+`DELETE /:roomId/cards/:cardId`  
+description: Delete a card  
 response: null
 
 `POST /join/:roomCode`  
-Allow a participant to join a room by its room code.  
+description: Allow a participant to join a room by its room code.  
 body: `{ name: String }`  
 response: User
 
 `POST /:roomId/cards/:cardId/stage`  
-Stage a card to voting  
+description: Stage a card to voting  
 body: `{}`  
 response: null
 
 `POST /:roomId/cards/:cardId/stage`  
-Unstage a card from voting and finish the voting session  
+description: Unstage a card from voting and finish the voting session  
 body: `{}`  
 response: null
 
 `POST /:roomId/cards/:cardId/vote`  
-Add a vote to a card  
-body: `{ vote, userId }`
+description: Add a vote to a card  
+body: `{ vote, userId }`  
 response: null
 
 `PUT /:roomId/cards/:cardId/vote`  
-Update a vote in a card  
+description: Update a vote in a card  
 body: `{ vote, userId }`  
 response: null
 
 `POST /:id/quit`  
-Allow users to exit the room. If the user leaving is the room owner, the room will be destroyed.  
-body: `{ userId }`
+description: Allow users to exit the room. If the user leaving is the room owner, the room will be destroyed.  
+body: `{ userId }`  
 response: null
 
 ## Websocket
