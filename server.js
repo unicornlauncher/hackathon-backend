@@ -1,15 +1,17 @@
 const PORT = 8080;
 const BASE_URL = '/api';
 
+const redis = require('redis');
 const express = require('express');
 const http = require('http');
 const morgan = require('morgan');
 const cors = require('cors');
 const { uuid } = require('uuidv4');
-const redis = require('redis');
 const bodyParser = require('body-parser');
 const IOServer = require('socket.io');
 const app = express();
+const { MemoryDatabase } = require('./memory-database');
+const { RoomCodeGenerator } = require('./room-code-generator');
 
 app.use(cors('*'));
 app.use(bodyParser.json({}));
@@ -19,139 +21,132 @@ app.use(`${BASE_URL}/v1/ping`, (req, res) => res.send('pong'));
 
 const roomRouter = express.Router();
 let io = {};
-class MemoryDatabase {
-  constructor({ redisClient }) {
-    this.memory = redisClient;
-  }
-
-  async keys(pattern) {
-    return new Promise((resolve, reject) => {
-      this.memory.keys(pattern, (err, keys) => {
-        if (err) {
-          reject(err);
-        }
-
-        resolve(keys);
-      });
-    });
-  }
-  async set(key, value) {
-    console.log(value);
-    return new Promise((resolve, reject) => {
-      this.memory.set(key, JSON.stringify(value), err => {
-        if (err) {
-          reject(err);
-        }
-
-        resolve();
-      });
-    });
-  }
-
-  async get(key) {
-    return new Promise((resolve, reject) => {
-      this.memory.get(key, (err, value) => {
-        if (err) {
-          reject(err);
-        }
-
-        resolve(JSON.parse(value));
-      });
-    });
-  }
-}
 
 const memory = new MemoryDatabase({ redisClient: redis.createClient() });
 
-class RoomCodeGenerator {
-  static generate() {
-    const alphabet = 'abcdefghijklmnopqrstuvxwyz';
-    const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+const internalServerError = res => res.status(500).json({ msg: 'Oops' });
+const server = http.createServer(app);
+io = new IOServer(server);
 
-    let code = '';
-    for (let i = 0; i <= 4; i++) {
-      code +=
-        parseInt(Math.random() * 2) % 2 === 0
-          ? alphabet[
-              parseInt(Math.random() * 99999) % alphabet.length
-            ].toUpperCase()
-          : numbers[parseInt(Math.random() * 99999) % numbers.length];
+class RoomsController {
+  constructor(props) {
+    this.props = props;
+
+    this.create = this.create.bind(this);
+    this.get = this.get.bind(this);
+    this.setConfig = this.setConfig.bind(this);
+    this.addCards = this.addCards.bind(this);
+    this.stageCardToVote = this.stageCardToVote.bind(this);
+  }
+
+  async create(req, res) {
+    const { memory } = this.props;
+    try {
+      const { roomName, userName } = req.body;
+      const owner = { _id: uuid(), userName };
+      const room = {
+        _id: uuid(),
+        roomName,
+        owner,
+        code: RoomCodeGenerator.generate(),
+        participants: [owner],
+      };
+
+      await memory.set(room._id, room);
+      return res.status(201).json(room);
+    } catch (ex) {
+      console.log(ex);
+      return internalServerError(res);
     }
+  }
 
-    return code;
+  async get(req, res) {
+    const { memory } = this.props;
+    try {
+      const room = await memory.get(req.params.id);
+      return res.json(room);
+    } catch (ex) {
+      console.log(ex);
+      return internalServerError(res);
+    }
+  }
+
+  async setConfig(req, res) {
+    const { memory, io } = this.props;
+    try {
+      const { sequence } = req.body;
+      const room = await memory.get(req.params.id);
+      console.log(room._id, { ...room, sequence });
+      const updated = { ...room, sequence };
+      await memory.set(room._id, updated);
+      io.sockets.emit('ROOM_CONFIG_UPDATED', {
+        data: { roomId: room._id, config: { sequence } },
+      });
+      return res.json(updated);
+    } catch (ex) {
+      console.log(ex);
+      return internalServerError(res);
+    }
+  }
+
+  async addCards(req, res) {
+    const { memory, io } = this.props;
+
+    try {
+      const { cards } = req.body;
+      const updatedCards = cards.map(c => ({ ...c, _id: uuid() }));
+      const room = await memory.get(req.params.id);
+      const updated = {
+        ...room,
+        cards: [...(room.cards || []), ...updatedCards],
+      };
+
+      await memory.set(room._id, updated);
+      io.sockets.emit('NEW_CARDS_ADDED', {
+        data: { roomId: room._id, cards: updatedCards },
+      });
+
+      return res.status(201).json(updated);
+    } catch (err) {
+      console.log(err);
+      return internalServerError(res);
+    }
+  }
+
+  async stageCardToVote(req, res) {
+    const { memory, io } = this.props;
+    try {
+      const { cardId, roomId } = req.params;
+
+      const room = await memory.get(roomId);
+      const updated = {
+        ...room,
+        cards: room.cards.map(card =>
+          card._id === cardId ? { ...card, staged: true, votes: [] } : card
+        ),
+      };
+
+      await memory.set(room._id, updated);
+
+      io.sockets.emit('CARD_STAGED_TO_VOTE', { data: { roomId, cardId } });
+
+      return res.status(204).end();
+    } catch (ex) {
+      console.log(ex);
+      return internalServerError(res);
+    }
   }
 }
 
-const internalServerError = res => res.status(500).json({ msg: 'Oops' });
+const roomsController = new RoomsController({ memory, io });
 
-roomRouter.route('/').post(async (req, res) => {
-  try {
-    const { roomName, userName } = req.body;
-    const owner = { _id: uuid(), userName };
-    const room = {
-      _id: uuid(),
-      roomName,
-      owner,
-      code: RoomCodeGenerator.generate(),
-      participants: [owner],
-    };
+roomRouter.route('/').post(roomsController.create);
 
-    await memory.set(room._id, room);
-    return res.status(201).json(room);
-  } catch (ex) {
-    console.log(ex);
-    return internalServerError(res);
-  }
-});
+roomRouter.route('/:id').get(roomsController.get);
 
-roomRouter.route('/:id').get(async (req, res) => {
-  try {
-    const room = await memory.get(req.params.id);
-    return res.json(room);
-  } catch (ex) {
-    console.log(ex);
-    return internalServerError(res);
-  }
-});
+roomRouter.route('/:id/config').post(roomsController.setConfig);
 
-roomRouter.route('/:id/config').post(async (req, res) => {
-  try {
-    const { sequence } = req.body;
-    const room = await memory.get(req.params.id);
-    console.log(room._id, { ...room, sequence });
-    const updated = { ...room, sequence };
-    await memory.set(room._id, updated);
-    io.sockets.emit('ROOM_CONFIG_UPDATED', {
-      data: { roomId: room._id, config: { sequence } },
-    });
-    return res.json(updated);
-  } catch (ex) {
-    console.log(ex);
-    return internalServerError(res);
-  }
-});
-
-roomRouter.route('/:id/cards').post(async (req, res) => {
-  try {
-    const { cards } = req.body;
-    const updatedCards = cards.map(c => ({ ...c, _id: uuid() }));
-    const room = await memory.get(req.params.id);
-    const updated = {
-      ...room,
-      cards: [...(room.cards || []), ...updatedCards],
-    };
-
-    await memory.set(room._id, updated);
-    io.sockets.emit('NEW_CARDS_ADDED', {
-      data: { roomId: room._id, cards: updatedCards },
-    });
-
-    return res.status(201).json(updated);
-  } catch (err) {
-    console.log(err);
-    return internalServerError(res);
-  }
-});
+roomRouter.route('/:id/cards').post(roomsController.addCards);
 
 roomRouter.route('/join/:roomCode').post(async (req, res) => {
   try {
@@ -193,23 +188,9 @@ roomRouter.route('/join/:roomCode').post(async (req, res) => {
   }
 });
 
-roomRouter.route('/:roomId/cards/:cardId/stage').post(async (req, res) => {
-  const { cardId, roomId } = req.params;
-
-  const room = await memory.get(roomId);
-  const updated = {
-    ...room,
-    cards: room.cards.map(card =>
-      card._id === cardId ? { ...card, staged: true, votes: [] } : card
-    ),
-  };
-
-  await memory.set(room._id, updated);
-
-  io.sockets.emit('CARD_STAGED_TO_VOTE', { data: { roomId, cardId } });
-
-  return res.status(204).end();
-});
+roomRouter
+  .route('/:roomId/cards/:cardId/stage')
+  .post(roomsController.stageCardToVote);
 
 roomRouter.route('/:roomId/cards/:cardId/unstage').post(async (req, res) => {
   const { cardId, roomId } = req.params;
@@ -277,9 +258,6 @@ roomRouter
   });
 
 app.use(`${BASE_URL}/v1/rooms`, roomRouter);
-
-const server = http.createServer(app);
-io = new IOServer(server);
 
 server.listen(PORT, () => {
   console.log(`> 🚀 Server running at ${PORT}`);
