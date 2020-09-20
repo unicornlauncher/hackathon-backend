@@ -171,7 +171,7 @@ class RoomsController {
         data: { roomId: room._id, participant },
       });
 
-      return res.json(room);
+      return res.status(201).json(participant);
     } catch (ex) {
       console.log(ex);
       return internalServerError(res);
