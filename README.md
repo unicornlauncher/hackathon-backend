@@ -40,96 +40,99 @@ REST API for our first Hackaton
 `POST /`
 Create a room  
 body: `{ roomName: String, userName: String }`  
-response: { room, owner }
+response: { room: Room, owner: User }
 
 `GET /:id`
+Get room info  
 response: { room: Room }
 
 `POST /:id/config`
 Sets room config, only config for the moment is { sequence: Array<String> }  
-Body: `{ sequence: Array<String> }`
+body: `{ sequence: Array<String> }`
 
 `POST /:id/cards`
-Add a list of cards to vote.
-
-Body: `{ cards: Array<Card> }, where Card: { title: String, description: String, meta: Object }`
+Add a list of cards to vote.  
+body: `{ cards: Array<Card> }`
 
 `DELETE /:roomId/cards/:cardId`
-Delete a card
+Delete a card  
+response: null
 
 `POST /join/:roomCode`  
 Allow a participant to join a room by its room code.  
-Body: `{ name: String }`
+body: `{ name: String }`  
+response: User
 
 `POST /:roomId/cards/:cardId/stage`  
 Stage a card to voting  
-Body: `{}`
+body: `{}`  
+response: null
 
 `POST /:roomId/cards/:cardId/stage`  
 Unstage a card from voting and finish the voting session  
-Body: `{}`
+body: `{}`  
+response: null
 
 `POST /:roomId/cards/:cardId/vote`  
 Add a vote to a card  
-Body: `{ vote, userId }`
+body: `{ vote, userId }`
+response: null
 
 `PUT /:roomId/cards/:cardId/vote`  
 Update a vote in a card  
-Body: `{ vote, userId }`
+body: `{ vote, userId }`  
+response: null
 
 `POST /:id/quit`  
 Allow users to exit the room. If the user leaving is the room owner, the room will be destroyed.  
-Body: `{ userId }`
+body: `{ userId }`
+response: null
 
 ## Websocket
 
 Websocket messages sent when some actions happen
 
-### Room config updated
+**Room config updated**
 
-message: `ROOM_CONFIG_UPDATED`
+message: `ROOM_CONFIG_UPDATED`  
 envelope: `{ data: { roomId: room._id, config: { sequence } } }`
 
-### New room participant
+**New room participant**
 
-message: `NEW_ROOM_PARTICIPANT`
+message: `NEW_ROOM_PARTICIPANT`  
 envelope: `{ data: { roomId: room._id, participant } }`
 
-### New room cards
+**New room cards**
 
-message: `NEW_CARDS_ADDED`
+message: `NEW_CARDS_ADDED`  
 envelope: `{ data: { roomId: room._id, cards: updatedCards } }`
 
-### Card staged to vote
+**Card staged to vote**
 
-message: `CARD_STAGED_TO_VOTE`
+message: `CARD_STAGED_TO_VOTE`  
 envelope: `{ data: { roomId, cardId } }`
 
-### Card voted
+**Card voted**
 
-message: `CARD_VOTED`
+message: `CARD_VOTED`  
 envelope: `{ data: { roomId, cardId, userId, vote } }`
 
-### Vote session finished
+**Vote session finished**
 
-message: `VOTE_SESSION_FINISHED`
+message: `VOTE_SESSION_FINISHED`  
 envelope: `{ roomId, result: cards }`
 
-### Vote updated
+**Vote updated**
 
-message: `VOTE_UPDATED`
+message: `VOTE_UPDATED`  
 envelope: `{ roomId, cardId, userId, newVote }`
 
-### Vote updated
+**Vote updated**
 
-message: `ROOM_DELETED`
+message: `ROOM_DELETED`  
 envelope: `{ data: { roomId: room._id } }`
 
-### Delete card
+**Delete card**
 
-message: `CARD_DELETED`
+message: `CARD_DELETED`  
 envelope: `{ data: { roomId, cardId } }`
-
-```
-
-```
