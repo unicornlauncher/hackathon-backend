@@ -177,7 +177,7 @@ roomRouter.route('/join/:roomCode').post(async (req, res) => {
     }
 
     const participant = { name, _id: uuid() };
-    await memory.set({
+    await memory.set(room._id, {
       ...room,
       participants: [...room.participants, participant],
     });
