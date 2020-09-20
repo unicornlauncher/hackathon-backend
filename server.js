@@ -29,6 +29,7 @@ roomRouter.route('/').post(roomsController.create);
 roomRouter.route('/:id').get(roomsController.get);
 roomRouter.route('/:id/config').post(roomsController.setConfig);
 roomRouter.route('/:id/cards').post(roomsController.addCards);
+roomRouter.route('/:roomId/cards/:cardId').delete(roomsController.deleteCard);
 roomRouter.route('/join/:roomCode').post(roomsController.join);
 
 roomRouter

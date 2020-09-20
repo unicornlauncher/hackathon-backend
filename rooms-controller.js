@@ -16,6 +16,7 @@ class RoomsController {
     this.updateVote = this.updateVote.bind(this);
     this.vote = this.vote.bind(this);
     this.quit = this.quit.bind(this);
+    this.deleteCard = this.deleteCard.bind(this);
   }
 
   async create(req, res) {
@@ -87,6 +88,26 @@ class RoomsController {
       return res.status(201).json(updated);
     } catch (err) {
       console.log(err);
+      return internalServerError(res);
+    }
+  }
+
+  async deleteCard(req, res) {
+    const { memory, io } = this.props;
+    const { roomId, cardId } = req.params;
+
+    try {
+      const room = await memory.get(roomId);
+      const updated = {
+        ...room,
+        cards: room.cards.filter(card => card._id !== cardId),
+      };
+
+      await memory.set(room._id, updated);
+      io.sockets.emit('CARD_DELETED', { data: { roomId, cardId } });
+      return res.status(204).end();
+    } catch (ex) {
+      console.log(ex);
       return internalServerError(res);
     }
   }

@@ -19,6 +19,9 @@ Body: `{ sequence: Array<String> }`
 Add a list of cards to vote.
 Body: `{ cards: Array<Card> }, where Card: { title: String, description: String, meta: Object }`
 
+`DELETE /:roomId/cards/:cardId`
+Delete a card
+
 `POST /join/:roomCode`
 Allow a participant to join a room by its room code.
 Body: `{ name: String }`
@@ -86,3 +89,8 @@ envelope: `{ roomId, cardId, userId, newVote }`
 
 message: `ROOM_DELETED`
 envelope: `{ data: { roomId: room._id } }`
+
+### Delete card
+
+message: `CARD_DELETED`
+envelope: `{ data: { roomId, cardId } }`
